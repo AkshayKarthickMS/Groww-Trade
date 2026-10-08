@@ -12,7 +12,7 @@ import time
 import pandas as pd
 from curl_cffi import requests as curl_requests
 
-from nifty50_symbols import NIFTY50
+from universe_symbols import fetch_nifty500_symbols
 
 CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 QUOTE_SUMMARY_URL = "https://query2.finance.yahoo.com/v10/finance/quoteSummary/{symbol}"
@@ -92,7 +92,7 @@ def fetch_fundamentals(session, crumb: str, symbol: str) -> dict:
     }
 
 
-def fetch_stock(session, crumb: str, symbol: str, retries: int = 3, backoff_sec: float = 3.0) -> dict | None:
+def fetch_stock(session, crumb: str, symbol: str, retries: int = 2, backoff_sec: float = 2.0) -> dict | None:
     for attempt in range(retries):
         try:
             hist = fetch_chart(session, symbol)
@@ -114,15 +114,18 @@ def fetch_stock(session, crumb: str, symbol: str, retries: int = 3, backoff_sec:
             time.sleep(backoff_sec * (attempt + 1))
 
 
-def fetch_universe(symbols: list[str] | None = None, pause_sec: float = 0.5) -> list[dict]:
-    """Fetch all symbols in the universe, skipping failures."""
-    symbols = symbols or NIFTY50
+def fetch_universe(symbols: list[str] | None = None, pause_sec: float = 0.35) -> list[dict]:
+    """Fetch all symbols in the universe, skipping failures. Universe defaults
+    to the current Nifty 500 constituents, fetched fresh from NSE each run."""
     session = make_session()
     crumb = get_crumb(session)
+    symbols = symbols or fetch_nifty500_symbols(session)
     results = []
-    for sym in symbols:
+    for i, sym in enumerate(symbols, 1):
         data = fetch_stock(session, crumb, sym)
         if data is not None:
             results.append(data)
+        if i % 50 == 0:
+            print(f"  ...{i}/{len(symbols)} symbols processed, {len(results)} fetched so far")
         time.sleep(pause_sec)
     return results

@@ -1,9 +1,9 @@
 # Daily Market Digest
 
-An automated email that screens Nifty 50 stocks priced at or below ₹500 using
+An automated email that screens Nifty 500 stocks priced at or below ₹500 using
 public technical (RSI, moving averages, momentum) and fundamental (P/E, ROE,
-debt/equity, earnings growth) data, plus a best-effort upcoming-IPO list.
-Runs every weekday morning via GitHub Actions and emails you the results.
+debt/equity, earnings growth) data. Runs every weekday morning via GitHub
+Actions and emails you the results.
 
 ## What this is — and isn't
 
@@ -16,6 +16,21 @@ Runs every weekday morning via GitHub Actions and emails you the results.
   short-term price moves. Treat this as one input, not a verdict.
 - The ₹500 price cap is a personal budget filter, not a value indicator —
   see the P/E and ROE figures in the email for actual valuation signals.
+
+## Why there's no options screening
+NSE's option-chain data is behind Akamai bot-protection that blocks scripted
+HTTP requests outright (tested directly — it silently returns empty data,
+unlike the quote/index endpoints this project uses successfully). Getting
+past it reliably would mean running a full headless browser to solve a bot
+challenge on every request — fragile, and a step into deliberately
+circumventing exchange anti-bot measures, which this project avoids. If you
+have your own broker API access (e.g. Zerodha Kite Connect, Upstox API) that
+can be added instead, since that's legitimate authenticated access rather
+than scraping.
+
+## Why there's no IPO screening
+Dropped — NSE's IPO endpoint is reachable, but keeping the project focused on
+the equity screener, which is the reliable, well-tested part.
 
 ## One-time setup
 
@@ -60,11 +75,13 @@ set GMAIL_APP_PASSWORD=your16charcode
 python main.py --dry-run   # writes preview.html instead of emailing
 python main.py             # actually sends the email
 ```
+Note: a full Nifty 500 run takes several minutes (~500 stocks x 2 requests
+each, rate-limited to be polite to Yahoo Finance).
 
 ## Adjusting the scope
-- Universe: edit `digest/nifty50_symbols.py` to add/remove symbols, or widen
-  to Nifty 500 if the ₹500 filter leaves too few results (most Nifty 50
-  stocks trade above ₹500, so expect a short list some days).
+- Universe: `digest/universe_symbols.py` fetches the current Nifty 500 list
+  from NSE automatically each run. To scan a custom list instead, pass
+  `symbols=[...]` to `fetch_universe()` in `digest/main.py`.
 - Price cap: `MAX_PRICE` in `digest/main.py`.
 - Schedule: the cron line in `.github/workflows/daily_digest.yml`.
 - Scoring weights: `digest/score_stocks.py` — every weight is a plain number

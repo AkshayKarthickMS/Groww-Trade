@@ -1,9 +1,9 @@
-"""Builds the HTML email body from scored stocks + IPO data."""
+"""Builds the HTML email body from scored stocks."""
 from datetime import date
 
 DISCLAIMER = (
     "This is an automated heuristic screen based on public technical and fundamental "
-    "data (yfinance / NSE). It is NOT investment advice, NOT a prediction of future "
+    "data (Yahoo Finance / NSE). It is NOT investment advice, NOT a prediction of future "
     "performance, and does NOT guarantee any return. Scores are transparent weighted "
     "formulas you can inspect in score_stocks.py — they rank today's data, they do "
     "not know the future. Markets carry real risk of loss. You are responsible for "
@@ -23,7 +23,7 @@ def render_stock_row(stock: dict) -> str:
     """
 
 
-def build_html(ranked_stocks: list[dict], ipo_result: dict, universe_note: str, top_n: int = 15) -> str:
+def build_html(ranked_stocks: list[dict], universe_note: str, top_n: int = 25) -> str:
     today = date.today().isoformat()
     top = ranked_stocks[:top_n]
 
@@ -42,23 +42,8 @@ def build_html(ranked_stocks: list[dict], ipo_result: dict, universe_note: str, 
         """
     else:
         stock_table = (
-            "<p><i>No stocks in the scanned universe passed the ₹500 price filter today. "
-            "Most Nifty 50 constituents trade well above ₹500 — consider widening the universe "
-            "(e.g. Nifty 500) if you want more results.</i></p>"
+            "<p><i>No stocks in the scanned universe passed the ₹500 price filter today.</i></p>"
         )
-
-    if ipo_result["ok"] and ipo_result["ipos"]:
-        items = []
-        for i in ipo_result["ipos"]:
-            name = i.get("companyName", "Unknown")
-            price = i.get("issuePrice", "?")
-            start = i.get("issueStartDate", "?")
-            end = i.get("issueEndDate", "?")
-            series = i.get("series", "")
-            items.append(f"<li><b>{name}</b> ({series}) — {price}, {start} to {end}</li>")
-        ipo_html = "<ul>" + "".join(items) + "</ul>"
-    else:
-        ipo_html = f"<p><i>{ipo_result.get('note', 'No IPO data available today.')}</i></p>"
 
     return f"""
     <html><body style="font-family:Arial,sans-serif;">
@@ -68,10 +53,7 @@ def build_html(ranked_stocks: list[dict], ipo_result: dict, universe_note: str, 
       </p>
       <p style="color:#666;font-size:13px;">{universe_note}</p>
 
-      <h3>Stock Screen (price ≤ ₹500, ranked by heuristic score)</h3>
+      <h3>Stock Screen (price ≤ ₹500, ranked by heuristic score, top {top_n})</h3>
       {stock_table}
-
-      <h3>Upcoming IPOs</h3>
-      {ipo_html}
     </body></html>
     """
