@@ -18,7 +18,7 @@ def to_yf_ticker(symbol: str) -> str:
 
 
 def make_session():
-    return curl_requests.Session(impersonate="chrome124")
+    return curl_requests.Session(impersonate="chrome120")
 
 
 def fetch_stock(symbol: str, retries: int = 3, backoff_sec: float = 5.0) -> dict | None:
